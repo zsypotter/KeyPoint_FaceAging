@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 import time
+from models import Aging_Model
 
 parser = argparse.ArgumentParser()
 # Path args
@@ -28,6 +29,14 @@ parser.add_argument('--beta2', type=float, default=0.999)
 parser.add_argument('--random_seed', type=int, default=999)
 args = parser.parse_args()
 
+# create file
+if not os.path.exists(args.save_dir):
+    os.makedirs(args.save_dir)
+
+if not os.path.exists(args.result_dir):
+    os.makedirs(args.result_dir)
+
+# set model name
 model_name = args.dataset + '_' \
          + args.gan_type + '_' \
          + 'gan_w_' + str(args.gan_w) + '_' \
@@ -35,8 +44,8 @@ model_name = args.dataset + '_' \
          + time.asctime(time.localtime(time.time()))
 print(model_name)
 
-if not os.path.exists(args.save_dir):
-    os.makedirs(args.save_dir)
+model = Aging_Model(args, model_name)
 
-if not os.path.exists(args.result_dir):
-    os.makedirs(args.result_dir)
+model.train()
+model.test()
+
