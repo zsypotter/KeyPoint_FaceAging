@@ -42,7 +42,6 @@ model_name = args.dataset + '_' \
          + 'gan_w_' + str(args.gan_w) + '_' \
          + 'pix_w_' + str(args.pix_w) + '_' \
          + time.asctime(time.localtime(time.time()))
-print(model_name)
 
 model = Aging_Model(args, model_name)
 
