@@ -12,6 +12,9 @@ parser.add_argument('--save_dir', type=str, default='dict/')
 parser.add_argument('--result_dir', type=str, default='results/')
 parser.add_argument('--log_dir', type=str, default='runs/')
 
+# Model discription
+parser.add_argument('--discription', type=str, default='')
+
 # H para args
 parser.add_argument('--epoch', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
@@ -41,7 +44,8 @@ model_name = args.dataset + '_' \
          + args.gan_type + '_' \
          + 'gan_w_' + str(args.gan_w) + '_' \
          + 'pix_w_' + str(args.pix_w) + '_' \
-         + time.asctime(time.localtime(time.time()))
+         + time.asctime(time.localtime(time.time())) + '_' \
+         + args.discription
 
 model = Aging_Model(args, model_name)
 
