@@ -10,6 +10,7 @@ import time
 from dataloader import customData
 from tensorboardX import SummaryWriter
 from utils import *
+from networks import *
 
 class Aging_Model(object):
     def __init__(self, args, model_name):
@@ -43,6 +44,18 @@ class Aging_Model(object):
         # set gpu device
         self.device = torch.device("cuda:0" if (torch.cuda.is_available() and args.ngpu > 0) else "cpu")
 
+        # Load Discriminator
+        print("Loading Discriminator")
+        self.D = Discriminator().to(self.device)
+        self.D = nn.DataParallel(self.D, list(range(args.ngpu)))
+        print_network(self.D)
+        
+        # Load Generator
+        print("Loading Generator")
+        self.G = Generator().to(self.device)
+        self.G = nn.DataParallel(self.G, list(range(args.ngpu)))
+        print_network(self.G)
+
     def train(self):
         # set random seed
         print(self.model_name)
@@ -55,7 +68,7 @@ class Aging_Model(object):
         data_transforms = transforms.Compose([
             #transforms.Resize((self.input_size, self.input_size)),
             transforms.ToTensor(),
-            #transforms.Normalize(mean=(.5,.5,.5),std=(.5,.5,.5))
+            transforms.Normalize(mean=(.5,.5,.5),std=(.5,.5,.5))
             ])
         trainset = customData(datapath, data_transforms)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=2)
@@ -64,14 +77,23 @@ class Aging_Model(object):
         writer = SummaryWriter(log_path)
         for epoch in range(1):
             for iters, data in enumerate(trainloader, 0):
+                print(iters)
+                face, kp_224, kp_112, kp_56, kp_28 = data
+                face = face.to(self.device)
+                kp_224 = kp_224.to(self.device)
+                kp_112 = kp_112.to(self.device)
+                kp_56 = kp_56.to(self.device)
+                kp_28 = kp_28.to(self.device)
+                self.D(face, kp_224)
+                print("Passing D Success")
+                self.G(face, kp_224, kp_112, kp_56, kp_28)
+                print("Passing G Success")
                 if iters % 100 == 0:
-                    print(iters)
-                    face, kp_224, kp_112, kp_56, kp_28 = data
-                    writer.add_image("face", face, iters)
-                    writer.add_image("kp_224", kp_224, iters)
-                    writer.add_image("kp_112", kp_112, iters)
-                    writer.add_image("kp_56", kp_56, iters)
-                    writer.add_image("kp_28", kp_28, iters)
+                    writer.add_image("face", (face + 1) / 2, iters)
+                    writer.add_image("kp_224", (kp_224 + 1) / 2, iters)
+                    writer.add_image("kp_112", (kp_112 + 1) / 2, iters)
+                    writer.add_image("kp_56", (kp_56 + 1) / 2, iters)
+                    writer.add_image("kp_28", (kp_28 + 1) / 2, iters)
 
         print("Train Success")
 
