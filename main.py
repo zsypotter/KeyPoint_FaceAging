@@ -13,8 +13,8 @@ parser.add_argument('--result_dir', type=str, default='results/')
 parser.add_argument('--log_dir', type=str, default='runs/')
 
 # H para args
-parser.add_argument('--epoch', type=int, default=10)
-parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--epoch', type=int, default=100)
+parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--ngpu', type=int, default=1)
 parser.add_argument('--input_size', type=int, default=224)
 parser.add_argument('--gan_type', type=str, default='LogGAN')
