@@ -19,8 +19,17 @@ class customData(torch.utils.data.Dataset):
 
     def __getitem__(self, item):
         img = self.loader(self.files[item])
+        face = img.crop((0, 0, 224, 224))
+        kp_224 = img.crop((224, 0, 448, 224))
+        kp_112 = kp_224.resize((112, 112))
+        kp_56 = kp_224.resize((56, 56))
+        kp_28 = kp_224.resize((28, 28))
 
         if self.data_transforms is not None:
-            img = self.data_transforms(img)
+            face = self.data_transforms(face)
+            kp_224 = self.data_transforms(kp_224)
+            kp_112 = self.data_transforms(kp_112)
+            kp_56 = self.data_transforms(kp_56)
+            kp_28 = self.data_transforms(kp_28)
         
-        return img
+        return face, kp_224, kp_112, kp_56, kp_28
