@@ -159,7 +159,7 @@ class Aging_Model(object):
                 perceptual_loss = self.feat_w * feat_loss + self.style_w * style_loss
 
 
-                G_loss = self.gan_w * gan_loss + self.pix_w * (0 * pix_loss + perceptual_loss)
+                G_loss = self.gan_w * gan_loss + self.pix_w * (pix_loss + perceptual_loss)
                 G_loss.backward()
                 self.G_optimizer.step()
 
@@ -182,7 +182,7 @@ class Aging_Model(object):
                 self.D_optimizer.step()
 
                 end_time = time.clock()
-                print('epochs: [{}/{}], iters: [{}/{}], per_iter {:.4f}, G_loss: {:.4f}, D_loss: {:.4f}, feat_loss: {:.4f}, style_loss: {:.4f}'.format(epoch, self.epoch, iters, iters_num, end_time - start_time, errG_fake.item(), D_loss.item(), feat_loss.item(), style_loss.item()))
+                print('epochs: [{}/{}], iters: [{}/{}], per_iter {:.4f}, G_loss: {:.4f}, D_loss: {:.4f}, pix_loss: {:.4f}, feat_loss: {:.4f}, style_loss: {:.4f}'.format(epoch, self.epoch, iters, iters_num, end_time - start_time, errG_fake.item(), D_loss.item(), pix_loss.item(), feat_loss.item(), style_loss.item()))
 
                 if iters % 100 == 0:
                     writer.add_image("face", (face + 1) / 2, iters + epoch * iters_num)
@@ -190,6 +190,7 @@ class Aging_Model(object):
                     writer.add_scalar('errD_real', errD_real, iters + epoch * iters_num)
                     writer.add_scalar('errD_fake', errD_fake, iters + epoch * iters_num)
                     writer.add_scalar('errG_fake', errG_fake, iters + epoch * iters_num)
+                    writer.add_scalar('pix_loss', pix_loss, iters + epoch * iters_num)
                     writer.add_scalar('feat_loss', feat_loss, iters + epoch * iters_num)
                     writer.add_scalar('style_loss', feat_loss, iters + epoch * iters_num)
 
