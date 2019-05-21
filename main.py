@@ -20,9 +20,11 @@ parser.add_argument('--epoch', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--ngpu', type=int, default=1)
 parser.add_argument('--input_size', type=int, default=224)
-parser.add_argument('--gan_type', type=str, default='LogGAN')
+parser.add_argument('--gan_type', type=str, default='MseGAN')
 parser.add_argument('--gan_w', type=float, default=1)
-parser.add_argument('--pix_w', type=float, default=100)
+parser.add_argument('--pix_w', type=float, default=10)
+parser.add_argument('--feat_w', type=float, default=1)
+parser.add_argument('--style_w', type=float, default=5)
 parser.add_argument('--lrG', type=float, default=0.0001)
 parser.add_argument('--lrD', type=float, default=0.0001)
 parser.add_argument('--lr_decay_step', type=int, default=1)
@@ -44,6 +46,8 @@ model_name = args.dataset + '_' \
          + args.gan_type + '_' \
          + 'gan_w_' + str(args.gan_w) + '_' \
          + 'pix_w_' + str(args.pix_w) + '_' \
+         + 'feat_w_' + str(args.feat_w) + '_' \
+         + 'style_w_' + str(args.style_w) + '_' \
          + time.asctime(time.localtime(time.time())) + '_' \
          + args.discription
 

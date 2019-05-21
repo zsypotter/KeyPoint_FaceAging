@@ -31,6 +31,8 @@ class Aging_Model(object):
         self.gan_type = args.gan_type   
         self.gan_w = args.gan_w
         self.pix_w = args.pix_w
+        self.feat_w = args.feat_w
+        self.style_w = args.style_w
         self.lrG = args.lrG
         self.lrD = args.lrD
         self.lr_decay_step = args.lr_decay_step
@@ -56,6 +58,12 @@ class Aging_Model(object):
         self.G = Generator().to(self.device)
         self.G = nn.DataParallel(self.G, list(range(args.ngpu)))
         print_network(self.G)
+
+        # Load VGG19
+        print("Loading VGG19")
+        self.VGG19 = VGG19().to(self.device)
+        self.VGG19 = nn.DataParallel(self.VGG19, list(range(args.ngpu)))
+        print_network(self.VGG19)
 
         # set criterion
         self.mse_criterion = nn.MSELoss().to(self.device)
@@ -83,6 +91,10 @@ class Aging_Model(object):
             ])
         trainset = customData(datapath, data_transforms)
         trainloader = torch.utils.data.DataLoader(trainset, batch_size=self.batch_size, shuffle=True, num_workers=2)
+
+        # define mean and std for VGG
+        vgg_mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1).to(self.device)
+        vgg_std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1).to(self.device)
         
         # train loop
 
@@ -113,6 +125,8 @@ class Aging_Model(object):
                 # update G
                 self.G.zero_grad()
                 fake_face = self.G(face, kp_224, kp_112, kp_56, kp_28)
+
+                # gan loss
                 fake_face_D = self.D(fake_face, kp_224)
                 if self.gan_type == 'LogGAN':
                     fake_face_D = F.sigmoid(fake_face_D)
@@ -120,8 +134,32 @@ class Aging_Model(object):
                 else:
                     errG_fake = self.mse_criterion(fake_face_D, real_label)
                 gan_loss = errG_fake
+
+                # pix loss
                 pix_loss = self.mse_criterion(face, fake_face) / (self.input_size * self.input_size * 3)
-                G_loss = self.gan_w * gan_loss + self.pix_w * pix_loss
+
+                # perceptual loss
+                fake_face_vgg = (fake_face + 1) / 2
+                face_vgg = (face + 1) / 2
+                fake_face_vgg = (fake_face_vgg - vgg_mean) / vgg_std
+                face_vgg = (face_vgg - vgg_mean) / vgg_std
+                f_relu1_2, f_relu2_2, f_relu3_3, f_relu4_3 = self.VGG19(fake_face_vgg)
+                relu1_2, relu2_2, relu3_3, relu4_3 = self.VGG19(face_vgg)
+                f_g1 = gram_matrix(f_relu1_2)
+                f_g2 = gram_matrix(f_relu2_2)
+                f_g3 = gram_matrix(f_relu3_3)
+                f_g4 = gram_matrix(f_relu4_3)
+                g1 = gram_matrix(relu1_2)
+                g2 = gram_matrix(relu2_2)
+                g3 = gram_matrix(relu3_3)
+                g4 = gram_matrix(relu4_3)
+
+                feat_loss = self.mse_criterion(f_g3, g3)
+                style_loss = self.mse_criterion(f_g1, g1) + self.mse_criterion(f_g2, g2) + self.mse_criterion(f_g3, g3) + self.mse_criterion(f_g4, g4)
+                perceptual_loss = self.feat_w * feat_loss + self.style_w * style_loss
+
+
+                G_loss = self.gan_w * gan_loss + self.pix_w * (0 * pix_loss + perceptual_loss)
                 G_loss.backward()
                 self.G_optimizer.step()
 
@@ -144,7 +182,7 @@ class Aging_Model(object):
                 self.D_optimizer.step()
 
                 end_time = time.clock()
-                print('epochs: [{}/{}], iters: [{}/{}], per_iter {:.4f}, G_loss: {:.4f}, D_loss: {:.4f}, lrG: {:.8f}, lrD: {:.8f}'.format(epoch, self.epoch, iters, iters_num, end_time - start_time, errG_fake.item(), D_loss.item(), self.G_optimizer.param_groups[0]['lr'], self.D_optimizer.param_groups[0]['lr']))
+                print('epochs: [{}/{}], iters: [{}/{}], per_iter {:.4f}, G_loss: {:.4f}, D_loss: {:.4f}, feat_loss: {:.4f}, style_loss: {:.4f}'.format(epoch, self.epoch, iters, iters_num, end_time - start_time, errG_fake.item(), D_loss.item(), feat_loss.item(), style_loss.item()))
 
                 if iters % 100 == 0:
                     writer.add_image("face", (face + 1) / 2, iters + epoch * iters_num)
@@ -152,6 +190,8 @@ class Aging_Model(object):
                     writer.add_scalar('errD_real', errD_real, iters + epoch * iters_num)
                     writer.add_scalar('errD_fake', errD_fake, iters + epoch * iters_num)
                     writer.add_scalar('errG_fake', errG_fake, iters + epoch * iters_num)
+                    writer.add_scalar('feat_loss', feat_loss, iters + epoch * iters_num)
+                    writer.add_scalar('style_loss', feat_loss, iters + epoch * iters_num)
 
         print("Train Success")
 

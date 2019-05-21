@@ -3,6 +3,20 @@ import torch.nn as nn
 import torchvision.models as models
 import numpy
 
+class VGG19(nn.Module):
+    def __init__(self):
+        super(VGG19, self).__init__()
+        self.select = ['3', '8', '17', '26']
+        self.vgg = models.vgg19(pretrained=True).features
+        
+    def forward(self, x):
+        features = []
+        for name, layer in self.vgg._modules.items():
+            x = layer(x)
+            if name in self.select:
+                features.append(x)
+        return features
+
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
@@ -48,9 +62,9 @@ class Generator(nn.Module):
         self.e_in3 = nn.InstanceNorm2d(256, affine=True)
         self.e_r3 = nn.ReLU(True)
         # 28
-        self.l_l1 = nn.Linear(28 * 28 * 256, 50)
+        self.l_l1 = nn.Linear(28 * 28 * 256, 100)
         self.l_t1 = nn.Tanh() 
-        self.l_l2 = nn.Linear(50, 28 * 28 * 128)
+        self.l_l2 = nn.Linear(100, 28 * 28 * 128)
         self.l_r2 = nn.ReLU(True)
 
         # 28

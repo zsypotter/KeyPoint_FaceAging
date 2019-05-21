@@ -2,6 +2,15 @@ import torch
 import numpy as np
 import random
 
+def gram_matrix(features, normalize=True):
+    N, C, H, W = features.shape
+    f1 = features.view(N, C, -1)
+    f2 = features.view(N, C, -1).permute(0, 2, 1)
+    gram = torch.bmm(f1, f2)
+    if normalize:
+        gram = gram / (H * W * C)
+    return gram
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
