@@ -10,7 +10,7 @@ def My_loader(path):
 
 class customData(torch.utils.data.Dataset):
     def __init__(self, datapath, data_transforms=None, loader=My_loader):
-        self.files = glob(os.path.join(datapath, 'adult') + '/*.jpg') + glob(os.path.join(datapath, 'kid') + '/*.jpg')
+        self.files = glob(os.path.join(datapath, 'adult') + '/*.jpg') + glob(os.path.join(datapath, 'kid_crop') + '/*.jpg')
         self.loader = loader
         self.data_transforms = data_transforms
 
