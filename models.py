@@ -8,7 +8,7 @@ import torch.optim as optim
 import os
 import numpy
 import time
-from dataloader import customData
+from dataloader import customData, customData_kid
 from tensorboardX import SummaryWriter
 from utils import *
 from networks import *
@@ -22,6 +22,8 @@ class Aging_Model(object):
         self.save_dir = args.save_dir
         self.result_dir = args.result_dir
         self.log_dir = args.log_dir
+        self.eval = args.eval
+        self.eval_model = args.eval_model
 
         # H para args
         self.epoch = args.epoch
@@ -49,34 +51,49 @@ class Aging_Model(object):
         # set gpu device
         self.device = torch.device("cuda:0" if (torch.cuda.is_available() and args.ngpu > 0) else "cpu")
 
-        # Load Discriminator
-        print("Loading Discriminator")
-        self.D = Discriminator().to(self.device)
-        self.D = nn.DataParallel(self.D, list(range(args.ngpu)))
-        print_network(self.D)
-        
-        # Load Generator
-        print("Loading Generator")
-        self.G = Generator().to(self.device)
-        self.G = nn.DataParallel(self.G, list(range(args.ngpu)))
-        print_network(self.G)
+        if self.eval == 0:
+            # Load Discriminator
+            print("Loading Discriminator")
+            self.D = Discriminator().to(self.device)
+            self.D = nn.DataParallel(self.D, list(range(args.ngpu)))
+            print_network(self.D)
+            
+            # Load Generator
+            print("Loading Generator")
+            self.G = Generator().to(self.device)
+            self.G = nn.DataParallel(self.G, list(range(args.ngpu)))
+            print_network(self.G)
 
-        # Load VGG19
-        if self.use_perceptual == 1:
-            print("Loading VGG19")
-            self.VGG19 = VGG19().to(self.device)
-            self.VGG19 = nn.DataParallel(self.VGG19, list(range(args.ngpu)))
-            print_network(self.VGG19)
+            # Load VGG19
+            if self.use_perceptual == 1:
+                print("Loading VGG19")
+                self.VGG19 = VGG19().to(self.device)
+                self.VGG19 = nn.DataParallel(self.VGG19, list(range(args.ngpu)))
+                print_network(self.VGG19)
 
-        # set criterion
-        self.mse_criterion = nn.MSELoss().to(self.device)
-        self.bce_criterion = nn.BCELoss().to(self.device)
+            # set criterion
+            self.mse_criterion = nn.MSELoss().to(self.device)
+            self.bce_criterion = nn.BCELoss().to(self.device)
 
-        # set optimizer
-        self.G_optimizer = optim.Adam(self.G.parameters(), lr=self.lrG, betas=(self.beta1, self.beta2))
-        self.D_optimizer = optim.Adam(self.D.parameters(), lr=self.lrD, betas=(self.beta1, self.beta2))
-        self.G_scheduler = torch.optim.lr_scheduler.StepLR(self.G_optimizer, self.lr_decay_step, gamma=self.lr_decay)
-        self.D_scheduler = torch.optim.lr_scheduler.StepLR(self.D_optimizer, self.lr_decay_step, gamma=self.lr_decay)
+            # set optimizer
+            self.G_optimizer = optim.Adam(self.G.parameters(), lr=self.lrG, betas=(self.beta1, self.beta2))
+            self.D_optimizer = optim.Adam(self.D.parameters(), lr=self.lrD, betas=(self.beta1, self.beta2))
+            self.G_scheduler = torch.optim.lr_scheduler.StepLR(self.G_optimizer, self.lr_decay_step, gamma=self.lr_decay)
+            self.D_scheduler = torch.optim.lr_scheduler.StepLR(self.D_optimizer, self.lr_decay_step, gamma=self.lr_decay)
+        else:
+             # Load Generator
+            print("Loading Generator")
+            self.G = Generator().to(self.device)
+            # fix load model bug about pytorch 0.4.1 
+            train_para = torch.load(self.eval_model)
+            new_train_para = {}
+            for k in train_para:
+                new_k = k.replace('module.', '')
+                v = train_para[k]
+                new_train_para[new_k] = v
+            self.G.load_state_dict(new_train_para)
+            self.G = nn.DataParallel(self.G, list(range(args.ngpu)))
+            print_network(self.G)
 
     def train(self):
         # set random seed
@@ -208,5 +225,40 @@ class Aging_Model(object):
         print("Train Success")
 
     def test(self):
+
+        datapath = os.path.join(self.dataroot, self.dataset)
+        print(datapath)
+        data_transforms = transforms.Compose([
+            #transforms.Resize((self.input_size, self.input_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(.5,.5,.5),std=(.5,.5,.5))
+            ])
+        testset = customData_kid(datapath, data_transforms)
+        testloader = torch.utils.data.DataLoader(testset, batch_size=self.batch_size, shuffle=True, num_workers=2)
+
+        print('Start Testing Loop...')
+        iters_num = len(testloader)
+        log_path = os.path.join(self.result_dir, self.eval_model.split('/')[-1].split('.')[0])
+        writer = SummaryWriter(log_path)
+        self.G.eval()
+        for iters, data in enumerate(testloader, 0):
+
+            start_time = time.clock()
+            # load data
+            face, kp_224, kp_112, kp_56, kp_28 = data
+            face = face.to(self.device)
+            kp_224 = kp_224.to(self.device)
+            kp_112 = kp_112.to(self.device)
+            kp_56 = kp_56.to(self.device)
+            kp_28 = kp_28.to(self.device)
+            fake_face = self.G(face, kp_224, kp_112, kp_56, kp_28)
+            writer.add_image("face", (face + 1) / 2, iters)
+            writer.add_image("kp_224", (kp_224 + 1) / 2, iters)
+            writer.add_image("fake_face", (fake_face + 1) / 2, iters)
+
+            end_time = time.clock()
+            print('iters: [{}/{}], per_iter: {:.4f}'.format(iters, iters_num, end_time - start_time))
+
+
         print("Test Success")
         

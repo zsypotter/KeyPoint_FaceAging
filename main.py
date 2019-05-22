@@ -11,6 +11,8 @@ parser.add_argument('--dataset', type=str, default='K2A')
 parser.add_argument('--save_dir', type=str, default='dict/')
 parser.add_argument('--result_dir', type=str, default='results/')
 parser.add_argument('--log_dir', type=str, default='runs/')
+parser.add_argument('--eval_model', type=str, default='/data2/zhousiyu/workspace/FaceAging/KeyPoint_FaceAging/dict/test.pth')
+parser.add_argument('--eval', type=int, default=0)
 
 # Model discription
 parser.add_argument('--discription', type=str, default='')
@@ -64,6 +66,8 @@ else:
 
 model = Aging_Model(args, model_name)
 
-model.train()
-model.test()
+if args.eval == 0:
+    model.train()
+else:
+    model.test()
 
