@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import os
 import numpy
+import torchvision.utils as vutils
 import time
 from dataloader import customData, customData_kid
 from tensorboardX import SummaryWriter
@@ -221,7 +222,7 @@ class Aging_Model(object):
                         writer.add_scalar('style_loss', feat_loss, iters + epoch * iters_num)
                         
             print("Saving model for", epoch, "epoch")
-            torch.save(self.G.state_dict(), os.path.join(self.save_dir, 'epoch_' + str(epoch) + '_' + self.model_name + '.pth'))
+            torch.save(self.G.state_dict(), os.path.join(self.save_dir, self.eval_model.split('/')[-1].split('.')[0], 'epoch_' + str(epoch) + '_' + '.pth'))
         print("Train Success")
 
     def test(self):
@@ -238,8 +239,6 @@ class Aging_Model(object):
 
         print('Start Testing Loop...')
         iters_num = len(testloader)
-        log_path = os.path.join(self.result_dir, self.eval_model.split('/')[-1].split('.')[0])
-        writer = SummaryWriter(log_path)
         self.G.eval()
         for iters, data in enumerate(testloader, 0):
 
@@ -252,9 +251,8 @@ class Aging_Model(object):
             kp_56 = kp_56.to(self.device)
             kp_28 = kp_28.to(self.device)
             fake_face = self.G(face, kp_224, kp_112, kp_56, kp_28)
-            writer.add_image("face", (face + 1) / 2, iters)
-            writer.add_image("kp_224", (kp_224 + 1) / 2, iters)
-            writer.add_image("fake_face", (fake_face + 1) / 2, iters)
+            vis_img = torch.cat((face, kp_224, fake_face), 2)
+            vutils.save_image(vis_img, os.path.join(self.result_dir, self.eval_model.split('/')[-1].split('.')[0], str(iters)+'.jpg'), normalize=True)
 
             end_time = time.clock()
             print('iters: [{}/{}], per_iter: {:.4f}'.format(iters, iters_num, end_time - start_time))

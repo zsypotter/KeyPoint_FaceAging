@@ -11,7 +11,7 @@ parser.add_argument('--dataset', type=str, default='K2A')
 parser.add_argument('--save_dir', type=str, default='dict/')
 parser.add_argument('--result_dir', type=str, default='results/')
 parser.add_argument('--log_dir', type=str, default='runs/')
-parser.add_argument('--eval_model', type=str, default='/data2/zhousiyu/workspace/FaceAging/KeyPoint_FaceAging/dict/test.pth')
+parser.add_argument('--eval_model', type=str, default='/data2/zhousiyu/workspace/FaceAging/KeyPoint_FaceAging/dict/batch_64_20_1_21.pth')
 parser.add_argument('--eval', type=int, default=0)
 
 # Model discription
@@ -39,11 +39,11 @@ parser.add_argument('--random_seed', type=int, default=999)
 args = parser.parse_args()
 
 # create file
-if not os.path.exists(args.save_dir):
-    os.makedirs(args.save_dir)
+if not os.path.exists(os.path.join(args.save_dir, args.eval_model.split('/')[-1].split('.')[0])):
+    os.makedirs(os.path.join(args.save_dir, args.eval_model.split('/')[-1].split('.')[0]))
 
-if not os.path.exists(args.result_dir):
-    os.makedirs(args.result_dir)
+if not os.path.exists(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0])):
+    os.makedirs(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0]))
 
 # set model name
 if args.use_perceptual == 1:
