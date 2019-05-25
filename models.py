@@ -128,7 +128,8 @@ class Aging_Model(object):
         for epoch in range(self.epoch):
             self.G_scheduler.step()
             self.D_scheduler.step()
-            torch.save
+            print("Saving model for", epoch, "epoch")
+            torch.save(self.G.state_dict(), os.path.join(self.save_dir, self.model_name, 'epoch_' + str(epoch) + '_' + '.pth'))
             for iters, data in enumerate(trainloader, 0):
 
                 start_time = time.clock()
@@ -220,9 +221,7 @@ class Aging_Model(object):
                     if self.use_perceptual == 1:
                         writer.add_scalar('feat_loss', feat_loss, iters + epoch * iters_num)
                         writer.add_scalar('style_loss', feat_loss, iters + epoch * iters_num)
-                        
-            print("Saving model for", epoch, "epoch")
-            torch.save(self.G.state_dict(), os.path.join(self.save_dir, self.eval_model.split('/')[-1].split('.')[0], 'epoch_' + str(epoch) + '_' + '.pth'))
+                    
         print("Train Success")
 
     def test(self):

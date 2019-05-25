@@ -58,8 +58,8 @@ class Generator(nn.Module):
         self.e_in2 = nn.InstanceNorm2d(128, affine=True)
         self.e_r2 = nn.ReLU(True)
         # 56
-        self.e_conv3 = nn.Conv2d(128, 128, 3, 2, 1)
-        self.e_in3 = nn.InstanceNorm2d(128, affine=True)
+        self.e_conv3 = nn.Conv2d(128, 256, 3, 2, 1)
+        self.e_in3 = nn.InstanceNorm2d(256, affine=True)
         self.e_r3 = nn.ReLU(True)
         # 28
         self.l_l1 = nn.Linear(28 * 28 * 256, 100)
@@ -133,14 +133,14 @@ class Generator(nn.Module):
         x = self.e_r3(x)
         # 28
 
-        '''x = x.view(-1, 28 * 28 * 256)
+        x = x.view(-1, 28 * 28 * 256)
         x = self.l_l1(x)
         x = self.l_t1(x)
         x = self.l_l2(x)
         x = self.l_r2(x)
 
         # 28
-        x = x.view(-1, 128, 28, 28)'''
+        x = x.view(-1, 128, 28, 28)
         x_r = x
         x = torch.cat((x, kp_28), 1)
         x = self.r1_conv1(x)

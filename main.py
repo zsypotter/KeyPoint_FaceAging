@@ -11,7 +11,7 @@ parser.add_argument('--dataset', type=str, default='K2A')
 parser.add_argument('--save_dir', type=str, default='dict/')
 parser.add_argument('--result_dir', type=str, default='results/')
 parser.add_argument('--log_dir', type=str, default='runs/')
-parser.add_argument('--eval_model', type=str, default='/data2/zhousiyu/workspace/FaceAging/KeyPoint_FaceAging/dict/batch_64_20_1_21.pth')
+parser.add_argument('--eval_model', type=str, default='/data2/zhousiyu/workspace/FaceAging/KeyPoint_FaceAging/dict/rLinear_32_30_1.pth')
 parser.add_argument('--eval', type=int, default=0)
 
 # Model discription
@@ -38,13 +38,6 @@ parser.add_argument('--beta2', type=float, default=0.999)
 parser.add_argument('--random_seed', type=int, default=999)
 args = parser.parse_args()
 
-# create file
-if not os.path.exists(os.path.join(args.save_dir, args.eval_model.split('/')[-1].split('.')[0])):
-    os.makedirs(os.path.join(args.save_dir, args.eval_model.split('/')[-1].split('.')[0]))
-
-if not os.path.exists(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0])):
-    os.makedirs(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0]))
-
 # set model name
 if args.use_perceptual == 1:
     model_name = args.dataset + '_' \
@@ -63,6 +56,15 @@ else:
             + 'pix_w_' + str(args.pix_w) + '_' \
             + time.asctime(time.localtime(time.time())) + '_' \
             + args.discription
+
+# create file
+if not os.path.exists(os.path.join(args.save_dir, model_name)):
+    os.makedirs(os.path.join(args.save_dir, model_name))
+
+if not os.path.exists(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0])):
+    os.makedirs(os.path.join(args.result_dir, args.eval_model.split('/')[-1].split('.')[0]))
+
+
 
 model = Aging_Model(args, model_name)
 
